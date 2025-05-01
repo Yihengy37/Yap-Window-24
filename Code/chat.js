@@ -1597,8 +1597,6 @@
         solved: 0,
         skipped: 0
     };
-    let isDark = localStorage.getItem("twenty-four-mode") === "dark";
-
 
     // DOM elements
     const gameWindow = document.getElementById('game-window');
