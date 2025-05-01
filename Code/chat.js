@@ -1576,6 +1576,334 @@
     };
   }
 
+let currentNumbers = [];
+let currentSolutions = [];
+let expressionItems = [];
+let selectedCardIndex = null;
+let stats = { solved: 0, skipped: 0 };
+let isDark = localStorage.getItem("twenty-four-mode") === "dark";
+
+
+// DOM elements
+const gameWindow = document.getElementById('game-window');
+const windowHeader = document.getElementById('window-header');
+const cardsContainer = document.getElementById('cards-container');
+const cards = Array.from(document.querySelectorAll('.card'));
+const operators = document.querySelectorAll('.op-btn');
+const expressionElement = document.getElementById('expression');
+const clearBtn = document.getElementById('clear-btn');
+const checkBtn = document.getElementById('check-btn');
+const newGameBtn = document.getElementById('new-game-btn');
+const showSolutionBtn = document.getElementById('show-solution-btn');
+const messageElement = document.getElementById('message');
+const solvedCountElement = document.getElementById('solved-count');
+const skippedCountElement = document.getElementById('skipped-count');
+const solutionContainer = document.getElementById('solution-container');
+const solutionElement = document.getElementById('solution');
+
+// Initialize the game when called from outside
+function runTwentyFour() {
+  // Use the window's dark mode setting if available
+  updateTheme();
+  
+  // Make the window draggable
+  enableDragging();
+  
+  // Set up event listeners
+  setupEventListeners();
+  
+  // Start a new game
+  startNewGame();
+  
+  // Show the game window
+  gameWindow.style.display = 'flex';
+}
+
+// Window controls
+function enableDragging() {
+  let offsetX, offsetY;
+  
+  windowHeader.onmousedown = function (e) {
+    offsetX = e.clientX - gameWindow.offsetLeft;
+    offsetY = e.clientY - gameWindow.offsetTop;
+    
+    document.onmousemove = function (e) {
+      gameWindow.style.left = `${e.clientX - offsetX}px`;
+      gameWindow.style.top = `${e.clientY - offsetY}px`;
+      gameWindow.style.transform = 'none';
+    };
+    
+    document.onmouseup = function () {
+      document.onmousemove = null;
+    };
+  };
+}
+
+// Set up all event listeners
+function setupEventListeners() {
+  // Window control buttons
+  document.getElementById('close-btn').onclick = function() {
+    gameWindow.style.display = 'none';
+  };
+  
+  document.getElementById('minimize-btn').onclick = function() {
+    gameWindow.style.opacity = '0';
+    setTimeout(() => {
+      gameWindow.style.display = 'none';
+      gameWindow.style.opacity = '1';
+    }, 300);
+  };
+  
+  let originalState = {};
+  document.getElementById('fullscreen-btn').onclick = function(e) {
+    const isFullscreen = e.target.innerHTML === '⿻';
+    
+    if (!isFullscreen) {
+      originalState = {
+        width: gameWindow.style.width,
+        height: gameWindow.style.height,
+        top: gameWindow.style.top,
+        left: gameWindow.style.left,
+        transform: gameWindow.style.transform
+      };
+      
+      gameWindow.style.position = 'fixed';
+      gameWindow.style.width = '100%';
+      gameWindow.style.height = '100%';
+      gameWindow.style.top = '0';
+      gameWindow.style.left = '0';
+      gameWindow.style.transform = 'none';
+      gameWindow.style.resize = 'none';
+      windowHeader.onmousedown = null;
+      e.target.innerHTML = '⿻';
+    } else {
+      gameWindow.style.width = originalState.width || '400px';
+      gameWindow.style.height = originalState.height || '550px';
+      gameWindow.style.top = originalState.top || '10%';
+      gameWindow.style.left = originalState.left || '50%';
+      gameWindow.style.transform = originalState.transform || 'translateX(-50%)';
+      gameWindow.style.resize = 'both';
+      enableDragging();
+      e.target.innerHTML = '⛶';
+    }
+  };
+  
+  // Card selection
+  cards.forEach((card, index) => {
+    card.addEventListener('click', () => {
+      if (card.classList.contains('used')) return;
+      
+      selectCard(index);
+    });
+    
+    // Drag and drop functionality
+    card.addEventListener('dragstart', (e) => {
+      if (card.classList.contains('used')) {
+        e.preventDefault();
+        return;
+      }
+      selectCard(index);
+      e.dataTransfer.setData('text/plain', index);
+    });
+  });
+  
+  expressionElement.addEventListener('dragover', (e) => {
+    e.preventDefault();
+  });
+  
+  expressionElement.addEventListener('drop', (e) => {
+    e.preventDefault();
+    const cardIndex = e.dataTransfer.getData('text/plain');
+    if (cardIndex !== '' && !cards[cardIndex].classList.contains('used')) {
+      addToExpression('number', currentNumbers[cardIndex]);
+      cards[cardIndex].classList.add('used');
+      selectedCardIndex = null;
+    }
+  });
+  
+  // Operator buttons
+  operators.forEach(btn => {
+    btn.addEventListener('click', () => {
+      addToExpression('operator', btn.textContent);
+    });
+  });
+  
+  // Game control buttons
+  clearBtn.addEventListener('click', clearExpression);
+  checkBtn.addEventListener('click', checkExpression);
+  newGameBtn.addEventListener('click', startNewGame);
+  showSolutionBtn.addEventListener('click', showSolution);
+  
+  // Keyboard support
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      clearExpression();
+    } else if (e.key === 'Enter') {
+      checkExpression();
+    } else if (e.key >= '0' && e.key <= '9') {
+      // Find if we have this number on an unused card
+      const cardIndex = currentNumbers.findIndex((num, idx) => 
+        num.toString() === e.key && !cards[idx].classList.contains('used')
+      );
+      if (cardIndex !== -1) {
+        addToExpression('number', currentNumbers[cardIndex]);
+        cards[cardIndex].classList.add('used');
+      }
+    } else if (['+', '-', '*', '/', '(', ')'].includes(e.key)) {
+      let operator = e.key;
+      if (e.key === '/') operator = '÷';
+      if (e.key === '*') operator = '×';
+      if (e.key === '-') operator = '−';
+      addToExpression('operator', operator);
+    }
+  });
+}
+
+// Game logic
+function startNewGame() {
+  // Clear the current game state
+  clearExpression();
+  messageElement.textContent = '';
+  messageElement.className = '';
+  solutionContainer.classList.add('hidden');
+  
+  // Get random set of numbers from the twentyFour dictionary
+  const keys = Object.keys(twentyFour);
+  const randomKey = keys[Math.floor(Math.random() * keys.length)];
+  currentNumbers = randomKey.split(',').map(Number);
+  currentSolutions = twentyFour[randomKey];
+  
+  // Update the cards
+  cards.forEach((card, index) => {
+    card.textContent = currentNumbers[index];
+    card.classList.remove('used', 'selected');
+  });
+}
+
+function selectCard(index) {
+  // Deselect previously selected card
+  if (selectedCardIndex !== null) {
+    cards[selectedCardIndex].classList.remove('selected');
+  }
+  
+  // Select the new card
+  selectedCardIndex = index;
+  cards[index].classList.add('selected');
+}
+
+function addToExpression(type, value) {
+  if (type === 'number' && selectedCardIndex !== null) {
+    cards[selectedCardIndex].classList.add('used');
+    selectedCardIndex = null;
+  }
+  
+  const item = document.createElement('span');
+  item.className = `expression-item ${type}`;
+  item.textContent = value;
+  item.dataset.value = value;
+  item.dataset.type = type;
+  
+  expressionElement.appendChild(item);
+  expressionItems.push({ type, value });
+}
+
+function clearExpression() {
+  expressionElement.innerHTML = '';
+  expressionItems = [];
+  
+  // Reset cards
+  cards.forEach(card => {
+    card.classList.remove('used', 'selected');
+  });
+  
+  selectedCardIndex = null;
+  messageElement.textContent = '';
+  messageElement.className = '';
+  solutionContainer.classList.add('hidden');
+}
+
+function checkExpression() {
+  if (expressionItems.length === 0) {
+    showMessage('Please enter an expression first', 'error');
+    return;
+  }
+  
+  // Check if all four numbers are used
+  const usedNumbers = expressionItems.filter(item => item.type === 'number').length;
+  if (usedNumbers !== 4) {
+    showMessage('You must use all four numbers', 'error');
+    return;
+  }
+  
+  // Build the expression string
+  let expressionStr = '';
+  for (const item of expressionItems) {
+    let value = item.value;
+    if (item.type === 'operator') {
+      if (value === '×') value = '*';
+      if (value === '÷') value = '/';
+      if (value === '−') value = '-';
+    }
+    expressionStr += value;
+  }
+  
+  try {
+    // Check if the expression uses only the given numbers
+    const numbersInExpression = expressionStr.match(/\d+/g).map(Number).sort();
+    const originalNumbers = [...currentNumbers].sort();
+    
+    const numbersMatch = numbersInExpression.length === originalNumbers.length && 
+                         numbersInExpression.every((num, idx) => num === originalNumbers[idx]);
+    
+    if (!numbersMatch) {
+      showMessage('You can only use the given numbers', 'error');
+      return;
+    }
+    
+    // Evaluate the expression
+    const result = eval(expressionStr);
+    
+    if (result === 24) {
+      showMessage('Correct! You made 24.', 'success');
+      stats.solved++;
+      solvedCountElement.textContent = stats.solved;
+    } else {
+      showMessage(`Your expression equals ${result}, not 24.`, 'error');
+    }
+  } catch (error) {
+    showMessage('Invalid expression. Please check your formula.', 'error');
+  }
+}
+
+function showSolution() {
+  if (currentSolutions.length > 0) {
+    const solution = currentSolutions[0];
+    solutionElement.textContent = formatSolution(solution);
+    solutionContainer.classList.remove('hidden');
+    stats.skipped++;
+    skippedCountElement.textContent = stats.skipped;
+  } else {
+    solutionElement.textContent = 'No solution available.';
+    solutionContainer.classList.remove('hidden');
+  }
+}
+
+function formatSolution(solution) {
+  // Replace operators to match the UI
+  return solution
+    .replace(/\*/g, ' × ')
+    .replace(/\//g, ' ÷ ')
+    .replace(/-/g, ' − ')
+    .replace(/\+/g, ' + ')
+    .replace(/\(/g, '( ')
+    .replace(/\)/g, ' )');
+}
+
+function showMessage(text, type) {
+  messageElement.textContent = text;
+  messageElement.className = type;
+}
+
   function setupGlobalFileViewer() {
     if (!window.openFileViewer) {
       window.openFileViewer = function (dataUrl, fileName, mimeType) {
