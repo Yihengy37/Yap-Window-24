@@ -2371,7 +2371,7 @@ Make sure to follow all the instructions while answering questions.
                         createSnakeGame();
                     }
                 }
-            } else if (pureMessage.trim().toLowerCase().startsWith("/24 ")) {
+            } else if (pureMessage.trim().toLowerCase().startsWith("/24")) {
                 runTwentyFour();
             } else {
                 const newMessageRef = push(messagesRef);
