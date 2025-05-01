@@ -13,9 +13,7 @@
     };
     const users = {};
     const email = auth.currentUser.email;
-    const {
-        twentyFour
-    } = require('./24.js');
+    import twentyFour from './24.js';
 
     if (!auth.currentUser || !auth.currentUser.emailVerified) {
         alert("Please verify your email before using chat.");
