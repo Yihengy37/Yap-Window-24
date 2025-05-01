@@ -1620,6 +1620,7 @@
     // Initialize the game when called from outside
     function runTwentyFour() {
         // Use the window's dark mode setting if available
+        console.log('attempting 24');
         updateTheme();
 
         // Make the window draggable
