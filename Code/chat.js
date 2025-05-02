@@ -2015,6 +2015,13 @@ Make sure to follow all the instructions while answering questions.
           }
         }
       } else if (pureMessage.trim().toLowerCase() === "/24") {
+            if curTwentyFour === null{
+              await update(botMessageRef, {
+              User: "[24]",
+              Message: email + ", you already have a 24 game active: " + String(curTwentyFour) + " (use '/24 skip' to skip)."
+              Date: Date.now(),
+              });
+            }
             const newMessageRef = push(messagesRef);
             await update(newMessageRef, {
               User: email,
@@ -2025,9 +2032,29 @@ Make sure to follow all the instructions while answering questions.
             const botMessageRef = push(messagesRef);
             await update(botMessageRef, {
               User: "[24]",
-              Message: "Make 24 with" + String(curTwentyFour),
+              Message: email + ", try to make 24 with " + String(curTwentyFour),
               Date: Date.now(),
             });
+        else if (pureMessage.trim().toLowerCase() === "/24 skip"{
+            curTwentyFour = null;
+            const newMessageRef = push(messagesRef);
+            await update(newMessageRef, {
+              User: email,
+              Message: "/24",
+              Date: Date.now(),
+            });
+            const botMessageRef = push(messagesRef);
+            await update(botMessageRef, {
+              User: "[24]",
+              Message: email + ", the current 24 game was successfully skipped."
+              Date: Date.now(),
+            });
+        }
+        else if (pureMessage.trim().toLowerCase().startsWith("/24 ")) {
+            const userTwentyFour = pureMessage.trim().toLowerCase().slice(4, pureMessage.trim().toLowerCase().length)
+            if userTwentyFour === curTwentyFour{
+            }
+      }
       } else {
         const newMessageRef = push(messagesRef);
         await update(newMessageRef, {
