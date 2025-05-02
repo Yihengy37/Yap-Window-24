@@ -2022,7 +2022,7 @@ Make sure to follow all the instructions while answering questions.
               Date: Date.now(),
             });
             curTwentyFour = Object.keys(twentyFour)[Math.floor(Math.random() * Object.keys(twentyFour).length)];
-            const newMessageRef = push(messagesRef);
+            const botMessageRef = push(messagesRef);
             await update(newMessageRef, {
               User: "[24]",
               Message: "Make 24 with" + String(curTwentyFour),
