@@ -2023,7 +2023,7 @@ Make sure to follow all the instructions while answering questions.
             });
             curTwentyFour = Object.keys(twentyFour)[Math.floor(Math.random() * Object.keys(twentyFour).length)];
             const botMessageRef = push(messagesRef);
-            await update(newMessageRef, {
+            await update(botMessageRef, {
               User: "[24]",
               Message: "Make 24 with" + String(curTwentyFour),
               Date: Date.now(),
