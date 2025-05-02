@@ -2015,7 +2015,13 @@ Make sure to follow all the instructions while answering questions.
           }
         }
       } else if (pureMessage.trim().toLowerCase() === "/24") {
-            curTwentyFour =  Object.keys(twentyFour)[Math.floor(Math.random() * keys.length)];
+            const newMessageRef = push(messagesRef);
+            await update(newMessageRef, {
+              User: email,
+              Message: "/24",
+              Date: Date.now(),
+            });
+            curTwentyFour = Object.keys(twentyFour)[Math.floor(Math.random() * Object.keys(twentyFour).length)];
             const newMessageRef = push(messagesRef);
             await update(newMessageRef, {
               User: "[24]",
