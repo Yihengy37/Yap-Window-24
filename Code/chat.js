@@ -2040,8 +2040,6 @@ Make sure to follow all the instructions while answering questions.
   }
 
 } else if (pureMessage.trim().toLowerCase() === "/24 skip") {
-  const skipped = curTwentyFour;
-  curTwentyFour = null;
 
   const newMessageRef = push(messagesRef);
   await update(newMessageRef, {
@@ -2050,13 +2048,26 @@ Make sure to follow all the instructions while answering questions.
     Date: Date.now(),
   });
 
-  const botMessageRef = push(messagesRef);
-  const correctAnswer = twentyFour[skipped]?.[0] || "N/A";
-  await update(botMessageRef, {
+  if (curTwentyFour === null){
+    const botMessageRef = push(messagesRef);
+    await update(botMessageRef, {
     User: "[24]",
-    Message: `${email}, the current 24 game, ${skipped}, was successfully skipped — the answer was ${correctAnswer}.`,
+    Message: `There is no 24 game active! Use /24 to activate a game.`,
     Date: Date.now(),
   });
+  }
+
+  else {
+    const skipped = curTwentyFour;
+    curTwentyFour = null;
+    const botMessageRef = push(messagesRef);
+    const correctAnswer = twentyFour[skipped]?.[0] || "N/A";
+    await update(botMessageRef, {
+      User: "[24]",
+      Message: `${email}, the current 24 game, ${skipped}, was successfully skipped — the answer was ${correctAnswer}.`,
+      Date: Date.now(),
+    });
+  }
 
 } else if (pureMessage.trim().toLowerCase().startsWith("/24 ")) {
   const newMessageRef = push(messagesRef);
