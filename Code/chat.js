@@ -2015,46 +2015,78 @@ Make sure to follow all the instructions while answering questions.
           }
         }
       } else if (pureMessage.trim().toLowerCase() === "/24") {
-            if curTwentyFour === null{
+            const newMessageRef = push(messagesRef);
+            await update(newMessageRef, {
+              User: email,
+              Message: "/24",
+              Date: Date.now(),
+            });
+            if curTwentyFour !== null{
               await update(botMessageRef, {
               User: "[24]",
               Message: email + ", you already have a 24 game active: " + String(curTwentyFour) + " (use '/24 skip' to skip)."
               Date: Date.now(),
               });
             }
-            const newMessageRef = push(messagesRef);
-            await update(newMessageRef, {
-              User: email,
-              Message: "/24",
-              Date: Date.now(),
-            });
-            curTwentyFour = Object.keys(twentyFour)[Math.floor(Math.random() * Object.keys(twentyFour).length)];
-            const botMessageRef = push(messagesRef);
-            await update(botMessageRef, {
-              User: "[24]",
-              Message: email + ", try to make 24 with " + String(curTwentyFour),
-              Date: Date.now(),
-            });
-        else if (pureMessage.trim().toLowerCase() === "/24 skip"{
+            else {
+                curTwentyFour = Object.keys(twentyFour)[Math.floor(Math.random() * Object.keys(twentyFour).length)];
+                const botMessageRef = push(messagesRef);
+                await update(botMessageRef, {
+                  User: "[24]",
+                  Message: email + ", try to make 24 with " + String(curTwentyFour) + " (Use /24 [answer] to submit your answer. Make sure to submit your answer with no spaces and no unnecessary parenthesis.)",
+                  Date: Date.now(),
+                });
+            }
+        } else if (pureMessage.trim().toLowerCase() === "/24 skip") {
             curTwentyFour = null;
             const newMessageRef = push(messagesRef);
             await update(newMessageRef, {
               User: email,
-              Message: "/24",
+              Message: "/24 skip",
               Date: Date.now(),
             });
             const botMessageRef = push(messagesRef);
             await update(botMessageRef, {
               User: "[24]",
-              Message: email + ", the current 24 game was successfully skipped."
+              Message: email + ", the current 24 game, " + curTwentyFour + ", was successfully skipped - the answer was " + twentyFour.curTwentyFour[0] + "." 
               Date: Date.now(),
             });
         }
         else if (pureMessage.trim().toLowerCase().startsWith("/24 ")) {
-            const userTwentyFour = pureMessage.trim().toLowerCase().slice(4, pureMessage.trim().toLowerCase().length)
-            if userTwentyFour === curTwentyFour{
+            const newMessageRef = push(messagesRef);
+            await update(newMessageRef, {
+              User: email,
+              Message: message,
+              Date: Date.now(),
+            });
+            if (curTwentyFour === null){
+                const botMessageRef = push(messagesRef);
+                await update(botMessageRef, {
+                  User: "[24]",
+                  Message: "There is no 24 game active! Use /24 to activate a game."
+                  Date: Date.now(),
+                });
             }
-      }
+            else {
+                const userTwentyFour = pureMessage.trim().toLowerCase().slice(4, pureMessage.trim().toLowerCase().length)
+                if (userTwentyFour in twentyFour.curTwentyFour){
+                    const botMessageRef = push(messagesRef);
+                    await update(botMessageRef, {
+                      User: "[24]",
+                      Message: "Correct!"
+                      Date: Date.now(),
+                    });
+                    curTwentyFour = null;
+                }
+                else {
+                    const botMessageRef = push(messagesRef);
+                    await update(botMessageRef, {
+                      User: "[24]",
+                      Message: "Sorry, " + email + ", that's not the right answer! Make sure to type your answer with no spaces and no unnecessary parenthesis. Use /24 skip if you're stuck."
+                      Date: Date.now(),
+                    });
+                }
+            }
       } else {
         const newMessageRef = push(messagesRef);
         await update(newMessageRef, {
